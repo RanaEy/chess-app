@@ -573,54 +573,6 @@ setViewIndex(0);
       setSira(onceki => onceki === 'beyaz' ? 'siyah' : 'beyaz'); 
   };
 
-  useEffect(() => {
-  // Sadece oyun modu 'bot' ise yapay zekayı çalıştır, arkadaş modunda kilitle!
-  if (oyunModu === 'bot' && sira === 'siyah') {
-    // mevcut stockfish / bot kodların aynen içeride kalacak...
-  }
-}, [sira, oyunModu]); // Bağımlılık dizisine oyunModu'nu da ekledik
-    
-    // 1. Tahtanın anlık matris durumunu yapay zekanın anlayacağı FEN metnine çeviriyoruz
-    const currentFen = boardToFen(pieces, 'siyah');
-
-   useEffect(() => {
-    // 1. KORUMA: Eğer sıra bendeyse bot hamle yapmasın, sadece sıra rakiptediyse (bottaysa) çalışsın
-    if (sira === benimRengim) return;
-
-    // Stockfish motorunu ayağa kaldırıyoruz
-    const aiWorker = new Worker('/stockfish-18.js');
-
-    aiWorker.onmessage = (event: MessageEvent) => {
-      const line = event.data;
-      if (line.startsWith('bestmove')) {
-        const bestMove = line.split(' ')[1];
-        if (bestMove && bestMove !== '(none)') {
-          const eskiSutun = cols.indexOf(bestMove[0] as any);
-          const eskiSatir = rows.indexOf(bestMove[1] as any);
-          const yeniSutun = cols.indexOf(bestMove[2] as any);
-          const yeniSatir = rows.indexOf(bestMove[3] as any);
-
-          setTimeout(() => {
-            executeMove(eskiSatir, eskiSutun, yeniSatir, yeniSutun);
-            aiWorker.terminate();
-          }, 600);
-        }
-      }
-    };
-
-    // FEN durumunu güvenli alıyoruz, yoksa boş string geçsin
-    const fenToUse = typeof currentFen !== 'undefined' ? currentFen : '';
-
-    aiWorker.postMessage('uci');
-    aiWorker.postMessage('isready');
-    aiWorker.postMessage(`position fen ${fenToUse}`);
-    aiWorker.postMessage('go depth 10');
-
-    return () => {
-      aiWorker.terminate();
-    };
-  }, [sira, benimRengim, typeof currentFen !== 'undefined' ? currentFen : '']);
-  
   return (
     <div id="app">
       <PromotionModal
