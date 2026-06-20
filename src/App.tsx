@@ -583,41 +583,44 @@ setViewIndex(0);
     // 1. Tahtanın anlık matris durumunu yapay zekanın anlayacağı FEN metnine çeviriyoruz
     const currentFen = boardToFen(pieces, 'siyah');
 
-    // 2. Public klasörüne kaydettiğin Stockfish worker dosyasını ayağa kaldırıyoruz
+   useEffect(() => {
+    // 1. KORUMA: Eğer sıra bendeyse bot hamle yapmasın, sadece sıra rakiptediyse (bottaysa) çalışsın
+    if (sira === benimRengim) return;
+
+    // Stockfish motorunu ayağa kaldırıyoruz
     const aiWorker = new Worker('/stockfish-18.js');
 
-    // 3. Stockfish arka planda hesabı bitirip bize mesaj attığında çalışacak kısım:
     aiWorker.onmessage = (event: MessageEvent) => {
       const line = event.data;
-      
-      // Stockfish en iyi hamleyi bulduğunda bize örn: "bestmove e7e5" çıktısı verir
       if (line.startsWith('bestmove')) {
         const bestMove = line.split(' ')[1];
-        
         if (bestMove && bestMove !== '(none)') {
-          // Gelen standart satranç kare notasyonunu (e7e5), bizim tahta matrisindeki indexlere çeviriyoruz
           const eskiSutun = cols.indexOf(bestMove[0] as any);
           const eskiSatir = rows.indexOf(bestMove[1] as any);
           const yeniSutun = cols.indexOf(bestMove[2] as any);
           const yeniSatir = rows.indexOf(bestMove[3] as any);
 
-          // Oyunda daha doğal, insanımsı bir bekleme hissi yaratmak için 600ms sonra hamleyi işletiyoruz
           setTimeout(() => {
             executeMove(eskiSatir, eskiSutun, yeniSatir, yeniSutun);
-            aiWorker.terminate(); // İşlem bittiğinde worker'ı kapatıp tarayıcı hafızasını rahatlatıyoruz
+            aiWorker.terminate();
           }, 600);
         }
       }
     };
 
-    // 4. Stockfish motoruna başlangıç emirlerini gönderiyoruz
+    // FEN durumunu güvenli alıyoruz, yoksa boş string geçsin
+    const fenToUse = typeof currentFen !== 'undefined' ? currentFen : '';
+
     aiWorker.postMessage('uci');
     aiWorker.postMessage('isready');
-    aiWorker.postMessage(`position fen ${currentFen}`);
-    aiWorker.postMessage('go depth 10'); // Arama derinliği (10 idealdir, zorluğu ayarlamak istersen değiştirebilirsin)
+    aiWorker.postMessage(`position fen ${fenToUse}`);
+    aiWorker.postMessage('go depth 10');
 
-    // SATIR 619 VE 624 ARASINDAKİ BU KIRMIZI ÇİZİLİ YARIM BLOĞU SİLİN:
-
+    return () => {
+      aiWorker.terminate();
+    };
+  }, [sira, benimRengim, typeof currentFen !== 'undefined' ? currentFen : '']);
+  
   return (
     <div id="app">
       <PromotionModal
