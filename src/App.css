@@ -1,0 +1,194 @@
+body {
+  margin: 0;
+  background-color: #302e2b; /* Klasik satranç arka planı */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+#app {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-area {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* --- BOARD STYLES --- */
+.board {
+  width: 560px;
+  height: 560px;
+  display: flex;
+  flex-direction: column;
+  border: 5px solid #484644;
+  user-select: none;
+}
+
+.board-row {
+  display: flex;
+  flex: 1;
+}
+
+.square {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.white-square { background-color: #eeeed2; }
+.black-square { background-color: #9a6d25; } 
+
+.possible-move {
+  cursor: pointer;
+}
+
+/* Olası hamle noktası */
+.possible-dot {
+  width: 20px;
+  height: 20px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+}
+
+/* Olası yeme halkası */
+.possible-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 5px solid rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+/* Tehdit altındaki şah */
+.check-danger {
+  background-color: #e74c3c !important; /* Kırmızı */
+  background: radial-gradient(circle, #e74c3c 20%, transparent 80%);
+}
+
+.chess-piece {
+  width: 85%;
+  height: 85%;
+  cursor: grab;
+  z-index: 2;
+}
+
+.chess-piece:active {
+  cursor: grabbing;
+}
+
+/* --- YENEN TAŞLAR & HAMLE LİSTESİ --- */
+.captured-zone, .move-list-container {
+  background-color: #262421;
+  border-radius: 5px;
+  padding: 10px;
+  width: 250px;
+}
+
+.captured-zone { min-height: 80px; }
+
+.zone-title, .move-list-header {
+  font-weight: bold;
+  border-bottom: 1px solid #444;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  color: #ccc;
+}
+
+.captured-pieces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.captured-piece-img { width: 30px; }
+
+/* Move List Scroll Ayarı */
+.move-list-container {
+  height: 350px;
+  display: flex;
+  flex-direction: column;
+}
+
+.move-list-content {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+.move-row {
+  display: flex;
+  padding: 5px;
+  border-bottom: 1px solid #333;
+}
+.move-row:nth-child(even) { background-color: #2a2926; }
+
+.move-number { width: 30px; color: #888; }
+.move-text { 
+  flex: 1; 
+  cursor: pointer; 
+  padding: 0 5px; 
+}
+.move-text:hover { color: #fff; text-decoration: underline; }
+.active-move { background-color: #769656; color: white; border-radius: 3px; }
+
+/* --- MODALS --- */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal-content {
+  background-color: #262421;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  border: 2px solid #555;
+}
+
+.promotion-options img {
+  width: 60px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  margin: 10px;
+}
+.promotion-options img:hover { transform: scale(1.1); background-color: #333; border-radius: 5px; }
+
+.restart-btn {
+  background-color: #769656;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-top: 15px;
+}
+.restart-btn:hover { background-color: #5a7541; }
+
+.restart-btn-small {
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+/* Animasyonlar */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
