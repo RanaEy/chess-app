@@ -653,60 +653,26 @@ setViewIndex(0);
       <div className="game-area">
         <CapturedZone title="Beyazın Kazandıkları" pieces={yenenSiyahlar} />
         
-        {/* --- MULTIPLAYER ODA GİRİŞ PANELİ --- */}
-<div style={{ margin: '20px 0', padding: '15px', background: '#2c2c2c', borderRadius: '8px', color: '#fff' }}>
-  <h3>Oyun Modu Seçimi</h3>
-  
-  {!oyunModu ? (
-    <div style={{ display: 'flex', gap: '10px' }}>
-      <button 
-        onClick={() => setOyunModu('bot')} 
-        style={{ padding: '10px 20px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-      >
-        🤖 Bot ile Oyna
-      </button>
-      
-      <div style={{ display: 'flex', gap: '5px' }}>
-        <input 
-          type="text" 
-          placeholder="Oda ID Girin (Örn: 123)" 
-          id="odaInput"
-          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', color: '#000' }}
-        />
-        <button 
-          onClick={() => {
-            const el = document.getElementById('odaInput') as HTMLInputElement;
-            if (el && el.value) odayaBaglan(el.value);
-          }} 
-          style={{ padding: '10px 20px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          ⚔️ Arkadaşınla Oyna
-        </button>
+        <div style={{ margin: '20px 0', padding: '15px', background: '#2c2c2c', borderRadius: '8px', color: '#fff' }}>
+        <h3>Çok Oyunculu Oda Girişi</h3>
+        <div style={{ display: 'flex', gap: '5px' }}>
+          <input
+            type="text"
+            placeholder="Oda ID Girin (Örn: 123)"
+            id="odaInput"
+            style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', color: '#000' }}
+          />
+          <button
+            onClick={() => {
+              const el = document.getElementById('odaInput') as HTMLInputElement;
+              if (el && el.value) odayaBaglan(el.value);
+            }}
+            style={{ padding: '10px 20px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            ⚔️ Arkadaşınla Oyna
+          </button>
+        </div>
       </div>
-    </div>
-  ) : (
-    <div>
-      <p style={{ fontWeight: 'bold' }}>
-        Aktif Mod: {oyunModu === 'bot' ? '🤖 Yapay Zeka (Stockfish)' : `⚔️ Çoklu Oyuncu (Oda: ${odaID})`}
-      </p>
-      {oyunModu === 'arkadas' && (
-        <p style={{ fontSize: '14px', color: benimRengim === 'beyaz' ? '#fff' : '#aaa' }}>
-          Renginiz: <span style={{ textTransform: 'uppercase', color: '#ffeb3b' }}>{benimRengim}</span> 
-          {benimRengim === 'siyah' && " (Beyazın hamle yapması bekleniyor)"}
-        </p>
-      )}
-      <button 
-        onClick={() => {
-          setOyunModu(null);
-          setOdaID('');
-          setBenimRengim('hepsi');
-        }}
-        style={{ marginTop: '10px', padding: '5px 10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-      >
-        Modu Değiştir / Odadan Çık
-      </button>
-    </div>
-  )}
 </div>
 
         <Board
@@ -721,9 +687,8 @@ setViewIndex(0);
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <CapturedZone title="Siyahın Kazandıkları" pieces={yenenBeyazlar} />
-          <MoveList history={history} currentIndex={viewIndex} onJump={jumpToMove} />
-        </div>
+        <CapturedZone title="Siyahın Kazandıkları" pieces={yenenBeyazlar} />
+        <MoveList history={history} currentIndex={viewIndex} onJump={jumpToMove} />
       </div>
     </div>
   );
