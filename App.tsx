@@ -574,26 +574,13 @@ setViewIndex(0);
   };
 
   useEffect(() => {
-  // Sadece oyun modu 'bot' ise yapay zekayı çalıştır, arkadaş modunda kilitle!
-  if (oyunModu === 'bot' && sira === 'siyah') {
-    // mevcut stockfish / bot kodların aynen içeride kalacak...
-  }
-}, [sira, oyunModu]); // Bağımlılık dizisine oyunModu'nu da ekledik
-    
-    // 1. Tahtanın anlık matris durumunu yapay zekanın anlayacağı FEN metnine çeviriyoruz
-    const currentFen = boardToFen(pieces, 'siyah');
-
-   useEffect(() => {
-    // Sıra bilgisini tamamen küçük harfe çeviriyoruz ('beyaz', 'siyah' veya 'w', 'b')
     const mevcutSira = sira?.toLowerCase();
 
-    // KORUMA: Sıra eğer 'siyah' veya 'b' DEĞİLSE bot kesinlikle çalışmasın!
-    // Böylece sıra Beyazdayken veya multiplayer modda senin ekranında bot asla tetiklenmez.
+    // 1. SEVİYE KORUMA: Sıra beyazdayken bu fonksiyondaki hiçbir şey çalışmasın
     if (mevcutSira !== 'siyah' && mevcutSira !== 'b') {
       return;
     }
 
-    // Yalnızca sıra Siyah'a geçtiğinde Stockfish devreye girer:
     const aiWorker = new Worker('/stockfish-18.js');
 
     aiWorker.onmessage = (event: MessageEvent) => {
@@ -607,25 +594,33 @@ setViewIndex(0);
           const yeniSatir = rows.indexOf(bestMove[3] as any);
 
           setTimeout(() => {
-            executeMove(eskiSatir, eskiSutun, yeniSatir, yeniSutun);
+            // 2. SEVİYE KORUMA: Hamle yapılacağı milisaniyede sırayı son kez kontrol et
+            const anlikSira = sira?.toLowerCase();
+            if (anlikSira === 'siyah' || anlikSira === 'b') {
+              executeMove(eskiSatir, eskiSutun, yeniSatir, yeniSutun);
+            }
             aiWorker.terminate();
           }, 600);
         }
       }
     };
 
-    // Tahtanın anlık FEN durumunu çekiyoruz
     const currentFen = boardToFen ? boardToFen(pieces, 'siyah') : '';
 
-    aiWorker.postMessage('uci');
-    aiWorker.postMessage('isready');
-    aiWorker.postMessage(`position fen ${currentFen}`);
-    aiWorker.postMessage('go depth 10');
+    // 3. SEVİYE KORUMA (KRİTİK): Botun düşünmeye başlama emrini SADECE sıra siyahsa gönder!
+    if (mevcutSira === 'siyah' || mevcutSira === 'b') {
+      aiWorker.postMessage('uci');
+      aiWorker.postMessage('isready');
+      aiWorker.postMessage(`position fen ${currentFen}`);
+      aiWorker.postMessage('go depth 10');
+    } else {
+      aiWorker.terminate();
+    }
 
     return () => {
       aiWorker.terminate();
     };
-  }, [sira, pieces]);
+  }, [sira]);
 
   return (
     <div id="app">
