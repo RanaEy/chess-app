@@ -18,6 +18,32 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
 
+  // --- PUANLARI HESABA GÖRE KAYDETME VE YÜKLEME ---
+
+  // 1. Oyuncu cüzdanı bağladığında eski puanını tarayıcıdan çek
+  useEffect(() => {
+    if (account) {
+      const kaydedilenPuan = localStorage.getItem(`puan_${account}`);
+      if (kaydedilenPuan) {
+        // Tarayıcıdaki veriyi (string) sayıya (number) çevirip state'e yaz
+        setBalance(parseInt(kaydedilenPuan, 10));
+      } else {
+        // Bu hesaba ait kayıt yoksa 0'dan başlasın (veya başlangıç hediyesi vermek istersen 0'ı değiştirebilirsin)
+        setBalance(0); 
+      }
+    } else {
+      // Cüzdan bağlantısı kesildiğinde ekranda başkasının puanı kalmasın
+      setBalance(0);
+    }
+  }, [account]);
+
+  // 2. Oyuncunun puanı her değiştiğinde (harcama veya kazanma) bunu anında tarayıcıya kaydet
+  useEffect(() => {
+    if (account) {
+      localStorage.setItem(`puan_${account}`, balance.toString());
+    }
+  }, [balance, account]);
+
   // Cüzdan bağlandığında yerel hafızadan (localStorage) bu cüzdanın puanını çekiyoruz
   useEffect(() => {
     if (account) {
