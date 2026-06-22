@@ -102,10 +102,18 @@ function App() {
   const [beyazSkor, setBeyazSkor] = useState<number>(0);
   const [siyahSkor, setSiyahSkor] = useState<number>(0);
   const [tema, setTema] = useState<string>('klasik');
+  // Oyuncunun sahip olduğu temalar (Klasik varsayılan olarak açık)
+  const [acilanTemalar, setAcilanTemalar] = useState<string[]>(['klasik']);
 
-  const [beyazSure, setBeyazSure] = React.useState<number>(300); // 300 saniye = 5 dakika
-  const [siyahSure, setSiyahSure] = React.useState<number>(300);
+  const [beyazSure, setBeyazSure] = React.useState<number>(900); // 900 saniye = 15 dakika
+  const [siyahSure, setSiyahSure] = React.useState<number>(900);
   const [zamanlayiciAktif, setZamanlayiciAktif] = React.useState<boolean>(false);
+  // Süreleri 04:55 gibi formata çeviren yardımcı fonksiyon
+  const zamaniFormatla = (saniye: number) => {
+    const dk = Math.floor(saniye / 60).toString().padStart(2, '0');
+    const sn = (saniye % 60).toString().padStart(2, '0');
+    return `${dk}:${sn}`;
+  };
 
   useEffect(() => {
     // Sunucudan gelen rol atamasını dinle
@@ -410,6 +418,35 @@ function App() {
     }
   }, [sira, pieces]);
 
+  // --- SÜRE KONTROL MOTORU ---
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (oyunDurumu === 'devam' && history.length > 1) {
+      interval = setInterval(() => {
+        if (sira === 'beyaz') {
+          setBeyazSure((onceki) => {
+            if (onceki <= 1) {
+              setOyunDurumu('zaman_bitti_siyah_kazandi');
+              return 0;
+            }
+            return onceki - 1;
+          });
+        } else {
+          setSiyahSure((onceki) => {
+            if (onceki <= 1) {
+              setOyunDurumu('zaman_bitti_beyaz_kazandi');
+              return 0;
+            }
+            return onceki - 1;
+          });
+        }
+      }, 1000); 
+    }
+
+    return () => clearInterval(interval);
+  }, [sira, oyunDurumu, history.length]);
+
   // Geçmişe Gitme Fonksiyonu
   const jumpToMove = (index: number) => {
     setViewIndex(index);
@@ -457,6 +494,8 @@ function App() {
     setYenenBeyazlar([]);
     setTerfiBekleyenKare(null);
     setViewIndex(0);
+    setBeyazSure(900);
+    setSiyahSure(900);
   };
 
   const odayaBaglan = (secilenOda: string) => {
@@ -601,6 +640,50 @@ if (oyunModu === 'arkadas' && oynananTas.color !== benimRengim) {
       setSira(onceki => onceki === 'beyaz' ? 'siyah' : 'beyaz'); 
   };
 
+  // --- TEMA SATIN ALMA VE SEÇME MOTORU ---
+  const temaSatinAlVeyaSec = (secilenTema: string, fiyat: number) => {
+    if (acilanTemalar.includes(secilenTema)) {
+      setTema(secilenTema);
+      return;
+    }
+
+    if (!account) {
+      alert("Tema satın almak için önce cüzdanınızı bağlamalısınız! 🦊");
+      return;
+    }
+
+    if (balance >= fiyat) {
+      const satinAlmaBasarili = harcaPuan(fiyat);
+      if (satinAlmaBasarili) {
+        setAcilanTemalar((onceki) => [...onceki, secilenTema]);
+        setTema(secilenTema); 
+        alert(`Tebrikler! ${secilenTema.toUpperCase()} teması başarıyla açıldı! 🎉`);
+      }
+    } else {
+      alert(`Yetersiz bakiye! Bu tema için ${fiyat} puana ihtiyacınız var. Mevcut puanınız: ${balance} 🪙`);
+    }
+  };
+
+  // --- GÜNLÜK BONUS DENETLEYİCİSİ ---
+  const gunlukBonusAl = () => {
+    if (!account) {
+      alert("Bonus almak için önce cüzdanınızı bağlamalısınız! 🦊");
+      return;
+    }
+
+    const bugun = new Date().toLocaleDateString(); 
+    const sonAlmaTarihi = localStorage.getItem(`sonBonusTarihi_${account}`);
+
+    if (sonAlmaTarihi === bugun) {
+      alert("Bugünkü 20 puanlık harçlığınızı zaten aldınız! Lütfen yarın tekrar gelin. ⏳");
+      return;
+    }
+
+    getDailyPoints(); 
+    localStorage.setItem(`sonBonusTarihi_${account}`, bugun);
+    alert("Günlük 20 puan harçlığınızı başarıyla aldınız! İyi oyunlar. 🎁");
+  };
+
   return (
     <div id="app">
       <PromotionModal
@@ -630,7 +713,7 @@ if (oyunModu === 'arkadas' && oynananTas.color !== benimRengim) {
             <span style={{ color: '#f1c40f', fontWeight: 'bold', fontSize: '14px', backgroundColor: '#2c3e50', padding: '4px 10px', borderRadius: '4px' }}>
               🪙 Puan: {balance}
             </span>
-            <button onClick={getDailyPoints} style={{ background: '#3498db', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+            <button onClick={gunlukBonusAl} style={{ background: '#3498db', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
               🎁 Günlük Harçlık (+20)
             </button>
             <button onClick={disconnectWallet} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
@@ -683,12 +766,54 @@ if (oyunModu === 'arkadas' && oynananTas.color !== benimRengim) {
             <div style={{ color: '#aaa', fontSize: '13px', marginBottom: '12px', background: '#000', padding: '6px', borderRadius: '4px' }}>
               Sıra Şu An: <span style={{ color: sira === 'beyaz' ? '#4CAF50' : '#F44336', fontWeight: 'bold' }}>{sira === 'beyaz' ? 'BEYAZDA ⬜' : 'SİYAHTA ⬛'}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', borderTop: '1px solid #222', paddingTop: '10px' }}>
-              <span style={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}>🎨 Tema:</span>
-              <button type="button" onClick={() => setTema('klasik')} style={{ padding: '4px 8px', background: '#b58863', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Klasik</button>
-              <button type="button" onClick={() => setTema('orman')} style={{ padding: '4px 8px', background: '#4d7c0f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Orman</button>
-              <button type="button" onClick={() => setTema('neon')} style={{ padding: '4px 8px', background: '#00ffcc', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Neon</button>
-            </div>
+
+            {/* Süre Durumu */}
+  <div style={{ display: 'flex', justifyContent: 'space-around', margin: '0 0 15px 0', padding: '10px', background: '#2c3e50', borderRadius: '6px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <span style={{ color: '#fff', fontSize: '12px', marginBottom: '4px' }}>BEYAZ SÜRE</span>
+      <span style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'monospace', color: sira === 'beyaz' ? '#4CAF50' : '#fff' }}>
+        {zamaniFormatla(beyazSure)}
+      </span>
+    </div>
+    <div style={{ width: '2px', background: '#34495e' }}></div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <span style={{ color: '#aaa', fontSize: '12px', marginBottom: '4px' }}>SİYAH SÜRE</span>
+      <span style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'monospace', color: sira === 'siyah' ? '#F44336' : '#aaa' }}>
+        {zamaniFormatla(siyahSure)}
+      </span>
+    </div>
+  </div>
+
+            {/* Tema Butonları */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', borderTop: '1px solid #222', paddingTop: '10px' }}>
+          <span style={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}>🎨 Tema:</span>
+          
+          <button 
+            type="button" 
+            onClick={() => setTema('klasik')} 
+            style={{ padding: '4px 8px', background: '#b58863', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', opacity: tema === 'klasik' ? 1 : 0.6 }}
+          >
+            Klasik
+          </button>
+          
+          <button 
+            type="button" 
+            onClick={() => temaSatinAlVeyaSec('orman', 20)} 
+            style={{ padding: '4px 8px', background: '#4d7c0f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', opacity: tema === 'orman' ? 1 : 0.6 }}
+          >
+            {acilanTemalar.includes('orman') ? 'Orman' : 'Orman (🔒 20)'}
+          </button>
+          
+          <button 
+            type="button" 
+            onClick={() => temaSatinAlVeyaSec('neon', 50)} 
+            style={{ padding: '4px 8px', background: '#00ffcc', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', opacity: tema === 'neon' ? 1 : 0.6 }}
+          >
+            {acilanTemalar.includes('neon') ? 'Neon' : 'Neon (🔒 50)'}
+          </button>
+        </div>
+
+        
           </div>
           <CapturedZone title="Beyazın Kazandıkları" pieces={yenenSiyahlar} />
         </div>
