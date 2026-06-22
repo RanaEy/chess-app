@@ -105,6 +105,33 @@ function App() {
   // Oyuncunun sahip olduğu temalar (Klasik varsayılan olarak açık)
   const [acilanTemalar, setAcilanTemalar] = useState<string[]>(['klasik']);
 
+  // --- TEMALARI HESABA GÖRE KAYDETME VE YÜKLEME ---
+  
+  // 1. Oyuncu cüzdanı bağladığında eski temalarını tarayıcıdan çek
+  useEffect(() => {
+    if (account) {
+      const kaydedilenTemalar = localStorage.getItem(`temalar_${account}`);
+      if (kaydedilenTemalar) {
+        // Eğer daha önce tema almışsa onları yükle
+        setAcilanTemalar(JSON.parse(kaydedilenTemalar));
+      } else {
+        // İlk defa giriyorsa sadece klasiği ver
+        setAcilanTemalar(['klasik']); 
+      }
+    } else {
+      // Cüzdan bağlantısı kesildiğinde her şeyi varsayılana döndür
+      setAcilanTemalar(['klasik']);
+      setTema('klasik');
+    }
+  }, [account]);
+
+  // 2. Oyuncu yeni bir tema satın aldığında bunu anında tarayıcıya kaydet
+  useEffect(() => {
+    if (account) {
+      localStorage.setItem(`temalar_${account}`, JSON.stringify(acilanTemalar));
+    }
+  }, [acilanTemalar, account]);
+
   const [beyazSure, setBeyazSure] = React.useState<number>(900); // 900 saniye = 15 dakika
   const [siyahSure, setSiyahSure] = React.useState<number>(900);
   const [zamanlayiciAktif, setZamanlayiciAktif] = React.useState<boolean>(false);
