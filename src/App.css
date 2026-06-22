@@ -44,8 +44,21 @@ body {
   position: relative;
 }
 
+/* --- KLASİK TEMA --- */
+.game-area.klasik .white-square { background-color: #eeeed2; }
+.game-area.klasik .black-square { background-color: #9a6d25; }
+
+/* --- ORMAN TEMASI --- */
+.game-area.orman .white-square { background-color: #e0eecc; }
+.game-area.orman .black-square { background-color: #4d7c0f; }
+
+/* --- NEON TEMASI --- */
+.game-area.neon .white-square { background-color: #1a1a2e; border: 1px solid #00ffcc; }
+.game-area.neon .black-square { background-color: #00ffcc; }
+
+/* Yedek Varsayılanlar (Butona basılmadan önce) */
 .white-square { background-color: #eeeed2; }
-.black-square { background-color: #9a6d25; } 
+.black-square { background-color: #9a6d25; }
 
 .possible-move {
   cursor: pointer;

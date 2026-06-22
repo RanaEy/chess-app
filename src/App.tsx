@@ -99,6 +99,13 @@ function App() {
   const [sahTehditte, setSahTehditte] = useState<boolean>(false);
   const [oyunDurumu, setOyunDurumu] = useState<string>('devam');
   const [sonHamle, setSonHamle] = useState<{ tas: Tas, eskiR: number, eskiC: number, yeniR: number, yeniC: number } | null>(null);
+  const [beyazSkor, setBeyazSkor] = useState<number>(0);
+  const [siyahSkor, setSiyahSkor] = useState<number>(0);
+  const [tema, setTema] = useState<string>('klasik');
+
+  const [beyazSure, setBeyazSure] = React.useState<number>(300); // 300 saniye = 5 dakika
+  const [siyahSure, setSiyahSure] = React.useState<number>(300);
+  const [zamanlayiciAktif, setZamanlayiciAktif] = React.useState<boolean>(false);
 
   useEffect(() => {
     // Sunucudan gelen rol atamasını dinle
@@ -417,6 +424,22 @@ function App() {
       if (!basariliMi) return;
     }
 
+    // Oyun sıfırlanırken skoru hak edene yazalım
+    let guncelBeyaz = beyazSkor;
+    let guncelSiyah = siyahSkor;
+
+    if (sira === 'siyah') {
+      guncelBeyaz = beyazSkor + 1;
+      setBeyazSkor(guncelBeyaz);
+    } else {
+      guncelSiyah = siyahSkor + 1;
+      setSiyahSkor(guncelSiyah);
+    }
+
+    if (odaID) {
+      socket.emit('skorGuncelle', { odaId: odaID, beyazSkor: guncelBeyaz, siyahSkor: guncelSiyah });
+    }
+
     // İlk açılıştaki çalışan tahtayı kopyalıyoruz
     const ilkTahta = history && history[0] ? history[0].board : null;
 
@@ -517,6 +540,11 @@ setViewIndex(0);
 
   const oynananTas = pieces[eskiSatir][eskiSutun];
   if (!oynananTas || oynananTas.color !== sira) return;
+  // birak fonksiyonunun içindeki if (oynananTas || oynananTas.color !== sira) kısmının hemen sonrasına ekleyebilirsin:
+
+if (oyunModu === 'arkadas' && oynananTas.color !== benimRengim) {
+  return; // Oyuncu rakibin taşını sürükleyip bırakmaya çalışırsa işlemi iptal et
+}
   if (!hareketGecerliMi(oynananTas, eskiSatir, eskiSutun, yeniSatir, yeniSutun, pieces)) return;
 
   // Tüm hamle yürütme, yeme ve şah kontrollerini bu merkezi motor hallediyor:
@@ -584,6 +612,7 @@ setViewIndex(0);
       
       <GameOverModal oyunDurumu={oyunDurumu} sira={sira} onRestart={oyunuSifirla} />
 
+      {/* Üst Kısım: Sıra ve Kontroller */}
       <div style={{ textAlign: 'center', color: 'white', fontSize: '24px', marginBottom: '15px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
           Sıra: <span style={{ fontWeight: 'bold', color: sira === 'beyaz' ? '#eeeeed' : '#769656' }}>{sira === 'beyaz' ? 'BEYAZ' : 'SİYAH'}</span>
@@ -593,88 +622,78 @@ setViewIndex(0);
 
       {/* Web3 Cüzdan Buton Alanı */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginTop: '10px', marginBottom: '20px' }}>
-     {account ? (
+        {account ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <span style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '14px' }}>
               🟢 Bağlı: {account.substring(0, 6)}...{account.substring(account.length - 4)}
             </span>
-            
-            {/* Oyun İçi Puan Göstergesi */}
             <span style={{ color: '#f1c40f', fontWeight: 'bold', fontSize: '14px', backgroundColor: '#2c3e50', padding: '4px 10px', borderRadius: '4px' }}>
               🪙 Puan: {balance}
             </span>
-
-            {/* Ücretsiz Günlük Puan Harçlığı */}
-            <button 
-              onClick={getDailyPoints}
-              style={{ background: '#3498db', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
-            >
+            <button onClick={getDailyPoints} style={{ background: '#3498db', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
               🎁 Günlük Harçlık (+20)
             </button>
-
-            <button 
-              onClick={disconnectWallet}
-              style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
-            >
+            <button onClick={disconnectWallet} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
               Bağlantıyı Kes
             </button>
           </div>
         ) : (
-          <button 
-            onClick={connectWallet} 
-            disabled={loading}
-            style={{
-              backgroundColor: '#f39c12',
-              color: 'white',
-              padding: '8px 16px',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
+          <button onClick={connectWallet} disabled={loading} style={{ backgroundColor: '#f39c12', color: 'white', padding: '8px 16px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
             {loading ? "Bağlanıyor..." : "MetaMask Cüzdanını Bağla"}
           </button>
         )}
       </div>
 
+      {/* Demo Butonu */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginTop: '10px' }}>
         <button onClick={senaryoPiyonTerfisi} style={{ backgroundColor: '#9b59b6', color: 'white', padding: '8px 16px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
           🚀 Demo: Piyon Terfisi
         </button>
       </div>
 
-      {sahTehditte && oyunDurumu === 'devam' && (
-        <div style={{ color: 'red', fontSize: '24px', fontWeight: 'bold', marginTop: '5px', textAlign: 'center', animation: 'pulse 1s infinite' }}>
-          ⚠️ ŞAH ÇEKİLDİ!
-        </div>
-      )}
-
-      <div className="game-area">
-        <CapturedZone title="Beyazın Kazandıkları" pieces={yenenSiyahlar} />
-        
-        <div style={{ margin: '20px 0', padding: '15px', background: '#2c2c2c', borderRadius: '8px', color: '#fff' }}>
-        <h3>Çok Oyunculu Oda Girişi</h3>
+      {/* Çok Oyunculu Oda Girişi */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '15px' }}>
+        <h3 style={{ color: '#fff', margin: 0 }}>Çok Oyunculu Oda Girişi</h3>
         <div style={{ display: 'flex', gap: '5px' }}>
-          <input
-            type="text"
-            placeholder="Oda ID Girin (Örn: 123)"
-            id="odaInput"
-            style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', color: '#000' }}
-          />
-          <button
-            onClick={() => {
-              const el = document.getElementById('odaInput') as HTMLInputElement;
-              if (el && el.value) odayaBaglan(el.value);
-            }}
-            style={{ padding: '10px 20px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-          >
+          <input type="text" placeholder="Oda ID Girin (Örn: 123)" id="odaInput" style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', color: '#000' }} />
+          <button onClick={() => { const el = document.getElementById('odaInput') as HTMLInputElement; if (el && el.value) odayaBaglan(el.value); }} style={{ padding: '10px 20px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
             ⚔️ Arkadaşınla Oyna
           </button>
         </div>
       </div>
-</div>
 
+      {/* Şah Çekildi Uyarısı */}
+      {sahTehditte && oyunDurumu === 'devam' && (
+        <div style={{ color: 'red', fontSize: '24px', fontWeight: 'bold', marginTop: '15px', textAlign: 'center', animation: 'pulse 1s infinite' }}>
+          ⚠️ ŞAH ÇEKİLDİ!
+        </div>
+      )}
+
+      {/* Ana Oyun Alanı */}
+      <div className={`game-area ${tema}`} style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginTop: '20px' }}>
+        
+        {/* Sol Panel: Maç Bilgisi ve Siyahın Kayıpları */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ padding: '15px', background: '#1e1e1e', borderRadius: '8px', textAlign: 'center', border: '1px solid #333', maxWidth: '400px' }}>
+            <h3 style={{ margin: '0 0 10px 0', color: '#ffeb3b', fontSize: '15px', fontWeight: 'bold' }}>🏆 CANLI MAÇ PANELİ 🏆</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>
+              <div style={{ color: '#fff' }}>⬜ BEYAZ: <span style={{ color: '#4CAF50' }}>{beyazSkor}</span></div>
+              <div style={{ color: '#aaa' }}>⬛ SİYAH: <span style={{ color: '#F44336' }}>{siyahSkor}</span></div>
+            </div>
+            <div style={{ color: '#aaa', fontSize: '13px', marginBottom: '12px', background: '#000', padding: '6px', borderRadius: '4px' }}>
+              Sıra Şu An: <span style={{ color: sira === 'beyaz' ? '#4CAF50' : '#F44336', fontWeight: 'bold' }}>{sira === 'beyaz' ? 'BEYAZDA ⬜' : 'SİYAHTA ⬛'}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', borderTop: '1px solid #222', paddingTop: '10px' }}>
+              <span style={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}>🎨 Tema:</span>
+              <button type="button" onClick={() => setTema('klasik')} style={{ padding: '4px 8px', background: '#b58863', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Klasik</button>
+              <button type="button" onClick={() => setTema('orman')} style={{ padding: '4px 8px', background: '#4d7c0f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Orman</button>
+              <button type="button" onClick={() => setTema('neon')} style={{ padding: '4px 8px', background: '#00ffcc', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Neon</button>
+            </div>
+          </div>
+          <CapturedZone title="Beyazın Kazandıkları" pieces={yenenSiyahlar} />
+        </div>
+
+        {/* Orta: Satranç Tahtası */}
         <Board
           pieces={pieces}
           sira={sira}
@@ -686,12 +705,15 @@ setViewIndex(0);
           onDrop={birak}
         />
 
+        {/* Sağ Panel: Hamle Geçmişi ve Beyazın Kayıpları */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <CapturedZone title="Siyahın Kazandıkları" pieces={yenenBeyazlar} />
-        <MoveList history={history} currentIndex={viewIndex} onJump={jumpToMove} />
+          <CapturedZone title="Siyahın Kazandıkları" pieces={yenenBeyazlar} />
+          <MoveList history={history} currentIndex={viewIndex} onJump={jumpToMove} />
+        </div>
+
       </div>
     </div>
   );
-}
+  } // App fonksiyonunu kapatır
 
 export default App;
